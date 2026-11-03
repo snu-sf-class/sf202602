@@ -6,48 +6,26 @@ Local Open Scope nat_scope.
 (** A sequential memoization example for every natural-number input.
     A sparse memo table grows as results are computed; an absent entry
     represents the -1 sentinel.  Natural numbers avoid integer overflow. *)
-Module Fibonacci.
 
-Fixpoint fib (n : nat) : nat :=
-  match n with
-  | 0 => 0
-  | S n' =>
-      match n' with
-      | 0 => 1
-      | S n'' => fib n' + fib n''
-      end
-  end.
+Module FibH.
 
 Definition fibonacci := fnsig "Fibonacci.fibonacci" (fntyp nat nat).
 Definition scopes := ["Fibonacci"].
-Definition memo := "Fibonacci" ↯ "memo".
-Definition cache := gmap nat nat.
 
-Definition cache_ok (xs : cache) : Prop :=
-  forall n v, xs !! n = Some v -> v = fib n.
+End FibH.
 
-Lemma cache_ok_initial : cache_ok ∅.
-Proof.
-  intros n v Hlookup. rewrite lookup_empty in Hlookup. discriminate.
-Qed.
-
-Lemma cache_ok_insert xs n :
-  cache_ok xs -> cache_ok (<[n := fib n]> xs).
-Proof.
-  intros Hvalues i v Hlookup.
-  apply fin_maps.lookup_insert_Some in Hlookup.
-  destruct Hlookup as [(-> & <-) | [_ Hlookup]].
-  - reflexivity.
-  - eapply Hvalues; exact Hlookup.
-Qed.
-
-Section Modules.
+Module FibI. Section FibI.
   Context `{!crisG Γ Σ α β τ _S _I}.
 
   (** The implementation reads the memo table before branching.  On a
       miss it makes ordinary recursive calls, then reads the current
       table again so that saving this result preserves recursive updates. *)
-  Definition target_body (n : nat) : itree crisE nat :=
+
+  Definition memo := "Fibonacci" ↯ "memo".
+  
+  Definition cache := gmap nat nat.
+  
+  Definition body (n : nat) : itree crisE nat :=
     'xs : cache <- cgetU memo;;
     match xs !! n with
     | Some v => Ret v
@@ -56,8 +34,8 @@ Section Modules.
              | 0 => Ret 0
              | 1 => Ret 1
              | S (S m) =>
-                 a <- ccallU fibonacci (S m);;
-                 b <- ccallU fibonacci m;;
+                 a <- ccallU FibH.fibonacci (S m);;
+                 b <- ccallU FibH.fibonacci m;;
                  Ret (a + b)
              end;;
         ys <- cgetU memo;;
@@ -65,39 +43,78 @@ Section Modules.
         Ret v
     end.
 
-  Definition source_body (n : nat) : itree crisE nat :=
-    Ret (fib n).
+  Definition fnsems : fnsemmap :=
+    {[fid FibH.fibonacci # (msk_scp FibH.scopes msk_true,
+      (None, cfunU FibH.fibonacci body))]}.
 
-  Definition target_fnsems : fnsemmap :=
-    {[fid fibonacci # (msk_scp scopes msk_true,
-      (None, cfunU fibonacci target_body))]}.
-
-  Definition source_fnsems : fnsemmap :=
-    {[fid fibonacci # (msk_scp scopes msk_true,
-      (None, cfunU fibonacci source_body))]}.
-
-  Program Definition target_smod : SMod.t := {|
-    SMod.scopes := scopes;
-    SMod.fnsems := target_fnsems;
+  Program Definition smod : SMod.t := {|
+    SMod.scopes := FibH.scopes;
+    SMod.fnsems := fnsems;
     SMod.initial_st := {[memo # (∅ : cache)↑]};
   |}.
   Solve All Obligations with mod_tac.
 
-  Program Definition source_smod : SMod.t := {|
-    SMod.scopes := scopes;
-    SMod.fnsems := source_fnsems;
+  Definition t := SMod.to_mod ∅ smod.
+  
+End FibI. End FibI.
+
+Module FibA. Section FibA.
+  Context `{!crisG Γ Σ α β τ _S _I}.
+
+  Fixpoint fib (n : nat) : nat :=
+    match n with
+    | 0 => 0
+    | S n' =>
+        match n' with
+        | 0 => 1
+        | S n'' => fib n' + fib n''
+        end
+    end.
+  
+  Definition body (n : nat) : itree crisE nat :=
+    Ret (fib n).
+
+  Definition fnsems : fnsemmap :=
+    {[fid FibH.fibonacci # (msk_scp FibH.scopes msk_true,
+      (None, cfunU FibH.fibonacci body))]}.
+
+  Program Definition smod : SMod.t := {|
+    SMod.scopes := FibH.scopes;
+    SMod.fnsems := fnsems;
     SMod.initial_st := ∅;
   |}.
   Solve All Obligations with mod_tac.
 
-  Definition target := SMod.to_mod ∅ target_smod.
-  Definition source := SMod.to_mod ∅ source_smod.
+  Definition t := SMod.to_mod ∅ smod.
+               
+End FibA. End FibA.
 
+Module FibCorrect. Section FibCorrect.
+  Context `{!crisG Γ Σ α β τ _S _I}.
+
+  Definition cache_ok (xs : FibI.cache) : Prop :=
+    forall n v, xs !! n = Some v -> v = FibA.fib n.
+
+  Lemma cache_ok_initial : cache_ok ∅.
+  Proof.
+    intros n v Hlookup. rewrite lookup_empty in Hlookup. discriminate.
+  Qed.
+
+  Lemma cache_ok_insert xs n :
+    cache_ok xs -> cache_ok (<[n := FibA.fib n]> xs).
+  Proof.
+    intros Hvalues i v Hlookup.
+    apply fin_maps.lookup_insert_Some in Hlookup.
+    destruct Hlookup as [(-> & <-) | [_ Hlookup]].
+    - reflexivity.
+    - eapply Hvalues; exact Hlookup.
+  Qed.
+  
   (** The source has no state.  Every entry in the target memo table
       contains the Fibonacci number at its own index. *)
   Definition Ist (STATE : stateGS Σ) : iProp Σ :=
-    (∃ xs : cache, memo ↦tgt xs↑ ∗ ⌜cache_ok xs⌝)%I.
-
+    (∃ xs : FibI.cache, FibI.memo ↦tgt xs↑ ∗ ⌜cache_ok xs⌝)%I.
+  
   Section Correctness.
     Context `{STATE : !stateGS Σ}.
     Context (R_s R_t : Type) (Ep : coPset * coPset).
@@ -107,25 +124,25 @@ Section Modules.
     Context (RR : retr_type Σ R_s R_t).
 
     Local Notation sim :=
-      (wsim (sandbox_fnsemmap source.(Mod.fnsems))
-        (sandbox_fnsemmap target.(Mod.fnsems)) (Ist STATE)
+      (wsim (sandbox_fnsemmap FibA.t.(Mod.fnsems))
+        (sandbox_fnsemmap FibI.t.(Mod.fnsems)) (Ist STATE)
         Ep g R_s R_t RR).
 
     (** A continuation form of correctness lets induction inline the two
         recursive target calls while the source stays at its return. *)
     Lemma sim_call n :
-      forall ps pt (xs : cache) i_s (k_t : Any.t -> itree crisE R_t),
+      forall ps pt (xs : FibI.cache) i_s (k_t : Any.t -> itree crisE R_t),
       cache_ok xs ->
-      memo ↦tgt xs↑ -∗
-      (∀ ys : cache, ⌜cache_ok ys⌝ -∗ memo ↦tgt ys↑ -∗
-        sim ps true i_s (k_t (fib n)↑)) -∗
+      FibI.memo ↦tgt xs↑ -∗
+      (∀ ys : FibI.cache, ⌜cache_ok ys⌝ -∗ FibI.memo ↦tgt ys↑ -∗
+        sim ps true i_s (k_t (FibA.fib n)↑)) -∗
       sim ps pt i_s
-        (r <- trigger (Call (fn_name fibonacci) n↑);; k_t r).
+        (r <- trigger (Call (fn_name FibH.fibonacci) n↑);; k_t r).
     Proof.
       induction n using (well_founded_induction lt_wf).
       intros ps pt xs i_s k_t Hxs.
       iIntros "MEM CONT".
-      cInlineT. rewrite /cfunU /target_body.
+      cInlineT. rewrite /cfunU /FibI.body.
       cStepsT. destruct (xs !! n) as [v|] eqn:Hentry.
       - rewrite (Hxs n v Hentry).
         cStepsT. iApply ("CONT" with "[] MEM"). done.
@@ -144,9 +161,9 @@ Section Modules.
   End Correctness.
 
   Lemma sim_fibonacci :
-    ⊢ ISim.sim_fun open source target Ist (fid fibonacci).
+    ⊢ ISim.sim_fun open FibA.t FibI.t Ist (fid FibH.fibonacci).
   Proof.
-    cStartFunSim. rewrite /source_body /target_body.
+    cStartFunSim. rewrite /FibA.body /FibI.body.
     cStepsS.
     destruct (Any.downcast arg) as [n|] eqn:Harg;
       cStepsS; try contradiction.
@@ -171,20 +188,19 @@ Section Modules.
         exact (cache_ok_insert (S (S m)) Hzs).
   Qed.
 
-  Lemma sim : ⊢ ISim.t open source target Ist.
+  Lemma sim : ⊢ ISim.t open FibA.t FibI.t Ist.
   Proof.
     cStartModSim.
-    - iPoseProof (state_init_tgt_acc _ _ memo with "TGT") as
+    - iPoseProof (state_init_tgt_acc _ _ FibI.memo with "TGT") as
         (ov) "(%Hmemo & MEM & _)".
       { set_solver. }
-      simpl_map. subst ov. iExists (∅ : cache). iFrame. iPureIntro.
+      simpl_map. subst ov. iExists (∅ : FibI.cache). iFrame. iPureIntro.
       apply cache_ok_initial.
     - iApply sim_fibonacci.
   Qed.
 
-  Theorem refinement : ⊢ ctx_refines target source.
+  Theorem refinement : ⊢ ctx_refines FibI.t FibA.t.
   Proof.
     iApply main_adequacy. iApply sim.
   Qed.
-End Modules.
-End Fibonacci.
+End FibCorrect. End FibCorrect.
