@@ -1,0 +1,69 @@
+고차원 적인 생각을 스펙으로 표현하기
+
+Module CellI.
+  private cv = 0;
+  def set(v) ≡
+    cv := v;
+  def get() ≡
+    ret cv;
+End CellI.
+
+refines
+
+Module CellA.
+  def set(v) ≡
+    v0 <- trigger (Take(nat));;
+    trigger (Assume(cell(v0)));;
+    trigger (Guarantee(cell(v)));;;
+    Ret ().
+
+  def get() ≡
+    v0 <- trigger (Take(nat));;
+    trigger (Assume(cell(v0)));;;
+    r <- trigger (Choose(nat));;
+    trigger (Guarantee(⌜r = v0⌝ * cell(v0)));;;
+    Ret r.
+    
+End CellA.
+
+forall v0, { cell(v0) } Cell.set(v) { cell(v)	 }
+forall v0, { cell(v0) } r = Cell.get() { ⌜r = v0⌝ * cell(v0) }
+
+(* client *)
+
+{ cell(0) }
+Cell.set(42);
+{ cell(42) }
+
+     {} my_own_code(); {}
+
+{ cell(42) }
+x = Cell.get();
+{ ⌜x = 42⌝ * cell(42) } 
+assert(x = 42);
+
+--------------------------------
+
+cell                       client
+
+cellauth(0)                cell(0)
+set(42)
+cellauth(0),cell(0)
+cellauth(42)
+cellauth(42)               cell(42)
+
+cellauth(42)               cell(42)
+cellauth(42),cell(42)
+r = get()
+                           [r = 42] * cell(42)
+
+{own r}  forall c, consistent (c + r) -> consistent (c + r')
+------------
+{own r'}
+
+PCM
+{emp} U
+{cellauth(v) | v \in nat} U
+{cell(v)     | v \in nat} U
+{cellfull(v) | v \in nat}
++를 내 생각을 표현하도록 잘 정의
