@@ -163,13 +163,12 @@ Module FibCorrect. Section FibCorrect.
   Lemma sim_fibonacci :
     ⊢ ISim.sim_fun open FibA.t FibI.t Ist (fid FibH.fibonacci).
   Proof.
-    cStartFunSim. rewrite /FibA.body /FibI.body.
+    cStartFunSim; simpl. rewrite /FibA.body /FibI.body.
     cStepsS.
     destruct (Any.downcast arg) as [n|] eqn:Harg;
       cStepsS; try contradiction.
     iDestruct "IST" as (xs) "(MEM & %Hxs)".
-    cStepsT. rewrite Harg. cStepsT.
-    destruct (xs !! n) as [v|] eqn:Hentry.
+    cStepsT. destruct (xs !! n) as [v|] eqn:Hentry.
     - rewrite (Hxs n v Hentry). cStepsT.
       cStep. iSplit; first done. iExists xs. iFrame. done.
     - destruct n as [|[|m]]; cStepsT.
