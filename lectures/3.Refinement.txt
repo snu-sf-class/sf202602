@@ -1,5 +1,7 @@
 3. Refinement
 
+3.1 Contextual Refinement
+
 - Impl: Concrete Program, say P
 
 - Spec: Abstract program, say A
@@ -21,6 +23,38 @@
 
   3. forall S T T' e, R S T -> (T steps to T' with e) ->
      exists S', S steps to S' with e /\ R S' T'
+
+3.2 History
+
+* Refinement
+
+I: Implementation
+A: Abstract model (Spec)
+Proof: Simulation between I and A
+Result: I <ctx= A
+
+* Program Logic
+
+I: Implementation
+<P,Q>: Pre & Post Condition for each function (Spec)
+Proof: each function satisfies its pre-post conditions using a program logic
+Result: I does not crash
+
+Hoare Logic (80's) -> 1-gen Separation Logic (2000) -> 2-gen Separation Logic (2015) (state of the art: Iris)
+
+* CRIS
+
+CCR(2023) -> CRIS (2026)
+
+3.3 Refinement + Pre-Post Condition
+
+{ P(m,v) } r = f(v) ~> m' { Q(m',r) }
+
+ClientI @ FibI <ctx= ClientI @ FibA <ctx= ClientA
+
+
+
+
 
 
 

@@ -1,4 +1,7 @@
+4. Separation Logic
+
 고차원 적인 생각을 스펙으로 표현하기
+
 
 Module CellI.
   private cv = 0;
