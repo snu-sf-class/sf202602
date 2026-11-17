@@ -2,7 +2,6 @@
 
 고차원 적인 생각을 스펙으로 표현하기
 
-
 Module CellI.
   private cv = 0;
   def set(v) ≡
@@ -11,7 +10,31 @@ Module CellI.
     ret cv;
 End CellI.
 
-refines
+/* client example */
+Cell.set(42);
+foo();
+r = Cell.get();
+assume(r = 42);
+
+forall v0, { cell(v0) } Cell.set(v) { cell(v)	 }
+
+forall v0, { cell(v0) } r = Cell.get() { ⌜r = v0⌝ * cell(v0) }
+
+
+
+
+PCM (Partial Commutative Monoid)
+{emp} U
+{cellauth(v) | v \in nat} U
+{cell(v)     | v \in nat} U
+{cellfull(v) | v \in nat}
+
++ 를 내 생각을 표현하도록 잘 정의
+
+{own r}  forall c, consistent (c + r) -> consistent (c + r')
+
+------------
+{own r'}
 
 Module CellA.
   def set(v) ≡
@@ -29,8 +52,6 @@ Module CellA.
     
 End CellA.
 
-forall v0, { cell(v0) } Cell.set(v) { cell(v)	 }
-forall v0, { cell(v0) } r = Cell.get() { ⌜r = v0⌝ * cell(v0) }
 
 (* client *)
 
@@ -55,18 +76,10 @@ cellauth(0),cell(0)
 cellauth(42)
 cellauth(42)               cell(42)
 
+foo()
+
 cellauth(42)               cell(42)
 cellauth(42),cell(42)
 r = get()
                            [r = 42] * cell(42)
-
-{own r}  forall c, consistent (c + r) -> consistent (c + r')
-------------
-{own r'}
-
-PCM
-{emp} U
-{cellauth(v) | v \in nat} U
-{cell(v)     | v \in nat} U
-{cellfull(v) | v \in nat}
-+를 내 생각을 표현하도록 잘 정의
+assume(r = 42);
