@@ -30,7 +30,8 @@ Module CellA. Section CellA.
     own cell_name (◯E v).
 
   Lemma cell_auth_get v v':
-    cell v -∗ auth v' -∗ ⌜v = v'⌝.
+    (* cell v -∗ auth v' -∗ ⌜v = v'⌝. *)
+    ⊢ cell v -∗ auth v' -∗ ⌜v = v'⌝.
   Proof.
     rewrite /cell /auth.
     iIntros "P P'"; iCombine "P P'" as "P" gives %wf.
@@ -38,7 +39,8 @@ Module CellA. Section CellA.
   Qed.
 
   Lemma cell_auth_set v v':
-    cell v -∗ auth v ==∗ cell v' ∗ auth v'.
+    (* cell v -∗ auth v ==∗ cell v' ∗ auth v'. *)
+    ⊢ cell v -∗ auth v -∗ |==> cell v' ∗ auth v'.
   Proof.
     rewrite /cell /auth.
     iIntros "C AU". iCombine "C AU" as "H".
