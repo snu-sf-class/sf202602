@@ -1,0 +1,5 @@
+-Q ../../../CRIS-examples/CRIS/itreeS ITreeS
+-Q ../../../CRIS-examples/CRIS/theories CRIS
+-Q ../../../CRIS-examples/CRIS/library CRIS
+-Q ../../../CRIS-examples/sequential/imp_system CRIS.imp_system
+-Q . CRIS.cell
