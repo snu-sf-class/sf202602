@@ -25,6 +25,11 @@
     + Midterm exam will be held in Oct. 31th. Please check instructions through [this page](exam/midterm/README.md).
 - Oct. 27:
     + Details about the midterm exam have been announced in the [README](exam/midterm/README.md).
+- Nov. 22:
+    + Midterm scores are released at etl website.
+    + Please claim until Nov. 27th via email.
+    + Statistics: (Q1, Q2, Q3, mean) = (50, 65, 80, 63.7)
+        * Also see the [histogram](exam/midterm/result.png)
 
 ## Assignments (optional)
 
