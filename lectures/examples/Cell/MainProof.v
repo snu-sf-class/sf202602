@@ -28,38 +28,38 @@ Module MainIA. Section MainIA.
     ⊢ ISim.sim_fun open MainA (MainI.t ★ CellA) IstFull
         (funid MainAS.main).
   Proof using sp_foo.
-    cStartFunSim. unfold MainI.main, MainA.main.
+    cStartFunSim. unfold MainI.main, MainA.main. s.
 
     (* Take cell(0) *)
     cStepsS. iDestruct "ASM" as "[-> CELL]".
 
-    cStepsT. cInlineT.
+    cStepsT. cInlineT. cStepsT.
     (* Give cell(0) *)
-    cStepsT. cForcesT. iSplitL "CELL"; et.
+    cForceT 0. cForceT. iSplitL "CELL"; eauto.
 
     cStepsT.
 
     (* Take cell(i) *)
-    cStepsT. iRename "GRT" into "CELL".
+    iRename "GRT" into "CELL".
 
     (* Call Foo.foo() simultaneously *)
-    cStepsT. cStepsS. rewrite sp_foo.
+    rewrite sp_foo. cStepsS.
     cCall "IST" as (r1) "IST".
     destruct Any.downcast; [|cStepsS; ss].
-    cStepsT. cInlineT.
+    cStepsT. cStepsS.
+
+    cInlineT. cStepsT.
     (* Give cell(i) *)
-    cStepsT. cForcesT. iSplitL "CELL"; eauto.
+    cForceT 42. cForceT. iSplitL "CELL"; eauto.
 
     (* Take cell(i) *)
     cStepsT. iRename "GRT" into "CELL".
 
     (* Call Print(i) simultaneously *)
-    cStepsT. cStepsS. cStep.
+    cStep.
 
-    cForcesS. iSplit; et.
-    cStep. iFrame. ss.
-
-    Unshelve. all:(exact ()).
+    cForcesS. iSplit; et. cStepsS.
+    cStep. iFrame. eauto.
   (*SLOW*)Qed.
 
   Lemma sim : ⊢ ISim.t open MainA (MainI.t ★ CellA) IstFull.
